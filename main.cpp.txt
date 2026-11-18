@@ -1,0 +1,238 @@
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <limits>
+
+using namespace std;
+
+struct Dish
+{
+    string name;
+    string description;
+    double price;
+};
+
+struct OrderItem
+{
+    Dish dish;
+    int quantity;
+};
+
+void showLastFiveOrders()
+{
+    ifstream ordersFile("orders.txt");
+    if (!ordersFile)
+    {
+        cout << "Could not open orders.txt. No saved orders are available.\n";
+        return;
+    }
+
+    const string separator = "------------------------------";
+    vector<string> orders;
+    string line;
+    string currentOrder;
+
+    while (getline(ordersFile, line))
+    {
+        if (line == separator)
+        {
+            if (!currentOrder.empty())
+            {
+                orders.push_back(currentOrder);
+                currentOrder.clear();
+            }
+        }
+        else
+        {
+            currentOrder += line + '\n';
+        }
+    }
+    if (!currentOrder.empty())
+    {
+        orders.push_back(currentOrder);
+    }
+
+    if (orders.empty())
+    {
+        cout << "No saved orders found.\n";
+        return;
+    }
+
+    size_t firstOrder = orders.size() > 5 ? orders.size() - 5 : 0;
+    cout << "\n===== Last " << orders.size() - firstOrder << " Orders =====\n";
+    for (size_t i = firstOrder; i < orders.size(); ++i)
+    {
+        cout << orders[i] << separator << '\n';
+    }
+}
+
+int main()
+{
+    const vector<Dish> menu = {
+        {"Margherita Pizza", "Classic pizza with cheese and tomato", 250.00},
+        {"Veg Burger", "Grilled vegetable patty with fresh lettuce", 150.00},
+        {"Pasta Alfredo", "Creamy white sauce pasta", 220.00},
+        {"French Fries", "Crispy golden potato fries", 100.00},
+        {"Chocolate Brownie", "Warm chocolate brownie", 120.00}
+    };
+
+    while (true)
+    {
+        cout << "\n===== Restaurant Order System =====\n";
+        cout << "1. Menu\n";
+        cout << "2. View last 5 orders\n";
+        cout << "3. Exit\n";
+        cout << "Enter your choice: ";
+
+        int mainChoice;
+        if (!(cin >> mainChoice))
+        {
+            cout << "Invalid input. Please enter a number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            continue;
+        }
+
+        if (mainChoice == 3)
+        {
+            cout << "Thank you for visiting!\n";
+            break;
+        }
+        if (mainChoice == 2)
+        {
+            showLastFiveOrders();
+            continue;
+        }
+        if (mainChoice != 1)
+        {
+            cout << "Please choose 1, 2, or 3.\n";
+            continue;
+        }
+
+        vector<OrderItem> cart;
+        bool confirmed = false;
+        string customerName;
+
+        while (!confirmed)
+        {
+            cout << "\n--------------- MENU ---------------\n";
+            cout << fixed << setprecision(2);
+            for (size_t i = 0; i < menu.size(); ++i)
+            {
+                cout << i + 1 << ". " << menu[i].name << " - "
+                     << menu[i].description << " - Rs. " << menu[i].price << '\n';
+            }
+            cout << "Enter a dish number to add it to your cart, 0 to confirm, "
+                    "or -1 to exit: ";
+
+            int dishChoice;
+            if (!(cin >> dishChoice))
+            {
+                cout << "Invalid input. Please enter a number.\n";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                continue;
+            }
+
+            if (dishChoice == -1)
+            {
+                cout << "Thank you for visiting!\n";
+                return 0;
+            }
+            if (dishChoice == 0)
+            {
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Enter customer name: ";
+                getline(cin, customerName);
+                confirmed = true;
+                break;
+            }
+            if (dishChoice < 1 || dishChoice > static_cast<int>(menu.size()))
+            {
+                cout << "That dish number is not on the menu.\n";
+                continue;
+            }
+
+            size_t index = static_cast<size_t>(dishChoice - 1);
+            bool alreadyInCart = false;
+            for (OrderItem &item : cart)
+            {
+                if (item.dish.name == menu[index].name)
+                {
+                    ++item.quantity;
+                    alreadyInCart = true;
+                    break;
+                }
+            }
+            if (!alreadyInCart)
+            {
+                cart.push_back({menu[index], 1});
+            }
+            cout << menu[index].name << " added to your cart.\n";
+        }
+
+        double total = 0.0;
+        for (const OrderItem &item : cart)
+        {
+            total += item.dish.price * item.quantity;
+        }
+
+        ofstream ordersFile("orders.txt", ios::app);
+        if (!ordersFile)
+        {
+            cout << "Error: Could not save the order to orders.txt.\n";
+        }
+        else
+        {
+            ordersFile << "Customer: " << customerName << '\n';
+            for (const OrderItem &item : cart)
+            {
+                ordersFile << item.dish.name << " x" << item.quantity
+                           << " - Rs. " << fixed << setprecision(2)
+                           << item.dish.price * item.quantity << '\n';
+            }
+            ordersFile << "Total: Rs. " << fixed << setprecision(2) << total
+                       << "\n------------------------------\n";
+            cout << "Order saved to orders.txt.\n";
+        }
+
+        cout << "\n============== FINAL BILL ==============\n";
+        if (cart.empty())
+        {
+            cout << "No items were ordered.\n";
+        }
+        else
+        {
+            cout << left << setw(24) << "Item" << setw(10) << "Qty"
+                 << setw(12) << "Price" << "Amount\n";
+            for (const OrderItem &item : cart)
+            {
+                double amount = item.dish.price * item.quantity;
+                cout << left << setw(24) << item.dish.name << setw(10) << item.quantity
+                     << "Rs. " << setw(8) << item.dish.price
+                     << "Rs. " << amount << '\n';
+            }
+        }
+        cout << "----------------------------------------\n";
+        cout << "Total: Rs. " << total << '\n';
+        cout << "Enter -1 to exit, or any other number to return to the main menu: ";
+
+        int exitChoice;
+        if (!(cin >> exitChoice))
+        {
+            cout << "Invalid input. Returning to the main menu.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            continue;
+        }
+        if (exitChoice == -1)
+        {
+            cout << "Thank you for visiting!\n";
+            break;
+        }
+    }
+
+    return 0;
+}

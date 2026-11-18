@@ -1,0 +1,11 @@
+Customer: Satyam Samal
+Margherita Pizza x1 - Rs. 250.00
+Veg Burger x1 - Rs. 150.00
+Pasta Alfredo x1 - Rs. 220.00
+Total: Rs. 620.00
+------------------------------
+Customer: Satyam
+Margherita Pizza x5 - Rs. 1250.00
+Chocolate Brownie x2 - Rs. 240.00
+Total: Rs. 1490.00
+------------------------------
